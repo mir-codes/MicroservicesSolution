@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+	  <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	  <UserSecretsId>91ec9612-4c4e-403d-a65a-3fd9a31d156f</UserSecretsId>
+	  <DockerfileContext>..\..\..</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Shared\BuildingBlocks\Auth\BuildingBlocks.Auth\BuildingBlocks.Auth.csproj" />
+		<ProjectReference Include="..\..\..\Shared\BuildingBlocks\Logging\BuildingBlocks.Logging\BuildingBlocks.Logging.csproj" />
+		<ProjectReference Include="..\..\..\Shared\BuildingBlocks\Middleware\BuildingBlocks.Middleware\BuildingBlocks.Middleware.csproj" />
+		<ProjectReference Include="..\User.Application\User.Application.csproj" />
+		<ProjectReference Include="..\User.Infrastructure\User.Infrastructure.csproj" />
+		</ItemGroup>
+</Project>
