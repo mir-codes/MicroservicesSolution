@@ -64,11 +64,11 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Apply migrations
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
-    db.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+//    db.Database.Migrate();
+//}
 
 // Middleware Pipeline
 app.UseCorrelationId();

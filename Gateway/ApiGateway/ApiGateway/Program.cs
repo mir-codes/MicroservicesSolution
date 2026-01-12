@@ -1,12 +1,20 @@
+using BuildingBlocks.Auth.Extensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
-using BuildingBlocks.Auth.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 
-builder.Services.AddKeycloakAuthentication(builder.Configuration);
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var keycloakConfig = builder.Configuration.GetSection("Keycloak");
+        options.Authority = keycloakConfig["Authority"];
+        options.Audience = keycloakConfig["Audience"];
+        options.RequireHttpsMetadata = false;
+    });
 builder.Services.AddOcelot();
 
 builder.Services.AddCors(options =>

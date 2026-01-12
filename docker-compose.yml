@@ -1,0 +1,171 @@
+services:
+  # ============================================================================
+  # KEYCLOAK DATABASE
+  # ============================================================================
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - keycloak-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # KEYCLOAK - IDENTITY PROVIDER
+  # ============================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+    command: start-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e \"GET /health/ready HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ============================================================================
+  # SQL SERVER - SHARED FOR BOTH SERVICES
+  # ============================================================================
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong@Passw0rd"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Passw0rd' -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ============================================================================
+  # USER SERVICE API
+  # ============================================================================
+  user-api:
+    build:
+      context: ./Services/UserService
+      dockerfile: Dockerfile
+    container_name: user-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5001
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=UserDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+      - Keycloak__Authority=http://keycloak:8080/realms/microservices-realm
+      - Keycloak__Audience=user-service
+      - Keycloak__ClientId=user-service
+      - Keycloak__ClientSecret=${USER_SERVICE_CLIENT_SECRET}
+      - Keycloak__RequireHttpsMetadata=false
+    ports:
+      - "5001:5001"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # ============================================================================
+  # ORDER SERVICE API
+  # ============================================================================
+  order-api:
+    build:
+      context: ./Services/OrderService
+      dockerfile: Dockerfile
+    container_name: order-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5002
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=OrderDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+      - Keycloak__Authority=http://keycloak:8080/realms/microservices-realm
+      - Keycloak__Audience=order-service
+      - Keycloak__ClientId=order-service
+      - Keycloak__ClientSecret=${ORDER_SERVICE_CLIENT_SECRET}
+      - Keycloak__RequireHttpsMetadata=false
+    ports:
+      - "5002:5002"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # ============================================================================
+  # API GATEWAY
+  # ============================================================================
+  api-gateway:
+    build:
+      context: ./Gateway/ApiGateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - Keycloak__Authority=http://keycloak:8080/realms/microservices-realm
+      - Keycloak__Audience=api-gateway
+      - Keycloak__ClientId=api-gateway
+      - Keycloak__ClientSecret=${API_GATEWAY_CLIENT_SECRET}
+      - Keycloak__RequireHttpsMetadata=false
+    ports:
+      - "5000:5000"
+    depends_on:
+      - user-api
+      - order-api
+      - keycloak
+    networks:
+      - microservices-network
+    restart: on-failure
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  microservices-network:
+    driver: bridge
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  keycloak-data:
+    driver: local
+  sqlserver-data:
+    driver: local

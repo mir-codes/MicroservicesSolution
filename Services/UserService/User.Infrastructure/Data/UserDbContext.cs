@@ -33,27 +33,32 @@ namespace User.Infrastructure.Data
 
                 // Seed data
                 entity.HasData(
-                    new Domain.Entities.User
-                    {
-                        Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                        Email = "admin@test.com",
-                        FirstName = "Admin",
-                        LastName = "User",
-                        PhoneNumber = "+1234567890",
-                        CreatedAt = DateTime.UtcNow,
-                        IsActive = true
-                    },
-                    new Domain.Entities.User
-                    {
-                        Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                        Email = "user@test.com",
-                        FirstName = "Regular",
-                        LastName = "User",
-                        PhoneNumber = "+1234567891",
-                        CreatedAt = DateTime.UtcNow,
-                        IsActive = true
-                    }
-                );
+     new Domain.Entities.User
+     {
+         Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+         Email = "admin@test.com",
+         FirstName = "Admin",
+         LastName = "User",
+         PhoneNumber = "+1234567890",
+         IsActive = true,
+         CreatedAt = new DateTime(2024, 01, 01, 0, 0, 0, DateTimeKind.Utc),
+         UpdatedAt = null,
+         KeycloakUserId = null
+     },
+     new Domain.Entities.User
+     {
+         Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+         Email = "user@test.com",
+         FirstName = "Regular",
+         LastName = "User",
+         PhoneNumber = "+1234567891",
+         IsActive = true,
+         CreatedAt = new DateTime(2024, 01, 01, 0, 0, 0, DateTimeKind.Utc),
+         UpdatedAt = null,
+         KeycloakUserId = null
+     }
+ );
+
             });
         }
     }
